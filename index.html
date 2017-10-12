@@ -1,0 +1,318 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head runat="server">
+    <script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+    <script src="https://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.3/themes/smoothness/jquery-ui.css">
+    <style>
+        .ui-autocomplete {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: default;
+        }
+
+        .loader {
+            border: 16px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 16px solid #3498db;
+            width: 120px;
+            height: 120px;
+            -webkit-animation: spin 2s linear infinite;
+            animation: spin 2s linear infinite;
+        }
+
+        .center {
+            margin: auto;
+            width: 120px;
+            padding: 0;
+        }
+
+        .modal {
+            text-align: center;
+        }
+
+            .modal:before {
+                content: '';
+                display: inline-block;
+                height: 100%;
+                vertical-align: middle;
+                margin-right: -4px;
+            }
+
+        .modal-dialog {
+            display: inline-block;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        @-webkit-keyframes spin {
+            0% {
+                -webkit-transform: rotate(0deg);
+            }
+
+            100% {
+                -webkit-transform: rotate(360deg);
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td,
+        th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+
+        span.error {
+            background-color: Tomato;
+        }
+
+        span.Valid {
+            background-color: Green;
+        }
+
+        span.Accept {
+            background-color: LightGreen;
+        }
+
+        span.Invalid {
+            background-color: Red;
+        }
+
+        span.Unknown {
+            background-color: SaddleBrown;
+        }
+    </style>
+    <title>Experian Client-Side POC</title>
+</head>
+<body>
+    <div id="splash" class="modal fade" role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="center">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <h1>Experian Client-Side POC</h1>
+        <table>
+            <tr>
+                <td>Auth Token</td>
+                <td>
+                    <input type="text" id="tbAuthToken" class="form-control" Width="600" value="2bcbb700-9252-4aa0-b984-02087c91984e" />
+                </td>
+            </tr>
+            <tr>
+                <td>Email</td>
+                <td>
+                    <input type="text" id="tbEmail" class="form-control" Width="600" value="Ama@gmail.com" />
+                </td>
+                <td>
+                    <button type="button" id="btnValidateEmail" class="btn btn-default pull-right" OnClick="validateEmail()">Validate email</button>
+                </td>
+            </tr>
+            <tr>
+                <td>Phone</td>
+                <td>
+                    <input type="text" id="tbPhone" class="form-control" Width="600" value="+61427671760" />
+                </td>
+                <td>
+                    <button type="button" id="btnValidatePhone" class="btn btn-default pull-right" OnClick="validatePhone()">Validate phone</button>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Address</td>
+                <td>
+                    <input type="text" id="tbAddress" class="form-control ui-autocomplete-input" Width="600" />
+                </td>
+            </tr>
+
+            <tr>
+                <td>Response</td>
+                <td>
+                    <textarea name="PhoneTestValues" id="tbOutput" class="form-control" rows="20" cols="60"></textarea>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Response time</td>
+                <td>
+                    <input type="text" id="tbResponseTime" class="form-control" Width="600" disabled="disabled" />
+                </td>
+            </tr>
+        </table>
+
+        <div>Verified address</div>
+        <table id="Address">
+            <thead>
+                <tr>
+                    <th>Key</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody id="tblBody"></tbody>
+        </table>
+    </div>
+</body>
+<script type="text/javascript">
+
+    function validatePhone() {
+        postRequest("https://api.experianmarketingservices.com/sync/queryresult/PhoneValidate/3.0/",
+        {
+            "Number": $('#tbPhone').val().toString()
+        });
+        //setTimeout(function () {
+        //        $('#splash').modal('hide');
+        //    },
+        //    3000);
+    }
+
+    function validateEmail() {
+        postRequest("https://api.experianmarketingservices.com/sync/queryresult/EmailValidate/1.0/",
+        {
+            "Email": "" + $('#tbEmail').val(),
+            "Timeout": "5",
+            "Verbose": "True"
+        });
+    }
+
+    function postRequest(url, body) {
+        $('#splash').modal('show');
+        var token = $('#tbAuthToken').val();
+        var startDate = null;
+        var executionTime = null;
+        $.ajax({
+            url: url,
+            //async: false,
+            dataType: "json",
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            headers: {
+                "Auth-Token": token
+            },
+            data: JSON.stringify(body),
+            beforeSend: function (request) {
+                startDate = new Date().getTime() - startDate;
+            },
+            success: function (data) {
+                executionTime = new Date().getTime() - startDate;
+                $("#tbOutput").val(JSON.stringify(data));
+            },
+            error: function (request, status, error) {
+                executionTime = new Date().getTime() - startDate;
+                $("#tbOutput").val(error);
+            },
+            complete: function (xhr, status) {
+                $("#tbResponseTime").val(executionTime + "ms");
+                $('#splash').modal('hide');
+            }
+        });
+    }
+
+    function getRequest(url, callback) {
+        $('#splash').modal('show');
+        var token = $('#tbAuthToken').val();
+        var startDate = null;
+        var executionTime = null;
+        var response = null;
+        $.ajax({
+            url: url,
+            type: "GET",
+            headers: {
+                "Auth-Token": token
+            },
+            beforeSend: function (request) {
+                startDate = new Date().getTime() - startDate;
+            },
+            success: function (data) {
+                executionTime = new Date().getTime() - startDate;
+                $("#tbOutput").val(JSON.stringify(data));
+                response = data;
+            },
+            error: function (request, status, error) {
+                executionTime = new Date().getTime() - startDate;
+                $("#tbOutput").val(error);
+            },
+            complete: function (xhr, status) {
+                $("#tbResponseTime").val(executionTime + "ms");
+                $('#splash').modal('hide');
+                callback(response);
+            }
+        });
+    }
+
+    $(function () {
+        $('#tbAddress').autocomplete({
+            minLength: 3,
+            messages: {
+                noResults: '',
+                results: function () { }
+            },
+            source: function (request, response) {
+                var url = "https://api.edq.com/capture/address/v2/search?country=AUS&query=" + request.term + "&take=7";
+                getRequest(url,
+                    function (data) {
+                        if (data == null) return;
+                        response($.map(data.results,
+                            function (item) {
+                                return { label: item.suggestion, value: item.suggestion, link: item.format }
+                            }));
+                    });
+            },
+            select: function (event, ui) {
+                var url = ui.item.link;
+                $("#Address tbody > tr").remove();
+                getRequest(url,
+                    function (data) {
+                        $.each(data.address,
+                            function (i, item) {
+                                var td_keys = $("<td/>");
+                                var td_values = $("<td/>");
+
+                                var keys = Object.keys(item);
+                                td_keys.append(keys[0]);
+                                td_values.append(item[keys[0]]);
+
+                                $("#Address").append($("<tr/>").append(td_keys).append(td_values));
+                            });
+                        $.each(data.components,
+                            function (i, item) {
+                                var td_keys = $("<td/>");
+                                var td_values = $("<td/>");
+
+                                var keys = Object.keys(item);
+                                td_keys.append(keys[0]);
+                                td_values.append(item[keys[0]]);
+
+                                $("#Address").append($("<tr/>").append(td_keys).append(td_values));
+                            });
+                    });
+            }
+        });
+    });
+</script>
+</html>
